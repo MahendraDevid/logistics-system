@@ -1,0 +1,89 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = "rangga05/order-management-service"
+        DOCKER_TAG   = "latest"
+        KUBECONFIG   = credentials('kubeconfig')
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                sh 'go test ./internal/... -v'
+            }
+        }
+
+        stage('Lint/Vet') {
+            steps {
+                sh 'go vet ./...'
+            }
+        }
+
+        stage('Build Image') {
+            steps {
+                sh 'docker build --platform linux/amd64 -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
+            }
+        }
+
+        stage('Functional Tests') {
+            environment {
+                TEST_DATABASE_URL = "host=localhost user=postgres password=postgres dbname=oms_test_db port=5433 sslmode=disable"
+            }
+            steps {
+                sh 'docker-compose -f docker-compose.test.yml up -d postgres-test'
+                sh 'sleep 5'
+                sh 'go test ./tests/... -v'
+                sh 'docker-compose -f docker-compose.test.yml down'
+            }
+        }
+
+        stage('Push Image') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                    sh 'docker push ${DOCKER_IMAGE}:${DOCKER_TAG}'
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh 'kubectl apply -f deployments/kubernetes/configmap.yaml'
+                sh 'kubectl apply -f deployments/kubernetes/postgres.yaml'
+                sh 'kubectl apply -f deployments/kubernetes/deployment.yaml'
+                sh 'kubectl rollout restart deployment/oms-app -n oms'
+            }
+        }
+
+        stage('Verify') {
+            steps {
+                sh 'kubectl rollout status deployment/oms-app -n oms --timeout=60s'
+                sh 'kubectl get all -n oms'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline OMS berhasil!'
+        }
+        failure {
+            echo 'Pipeline OMS gagal!'
+        }
+        always {
+            sh 'docker-compose -f docker-compose.test.yml down || true'
+        }
+    }
+}

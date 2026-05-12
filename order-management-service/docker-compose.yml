@@ -1,0 +1,87 @@
+version: "3.8"
+
+services:
+  # ─────────────────────────────────────────────
+  # PostgreSQL — dipakai untuk functional test
+  # dan development lokal
+  # ─────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: oms_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: oms_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────
+  # PostgreSQL khusus untuk functional test
+  # database terpisah agar data test tidak
+  # bercampur dengan data development
+  # ─────────────────────────────────────────────
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: oms_postgres_test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: oms_test_db
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────
+  # Kafka + Zookeeper — untuk development lokal
+  # ─────────────────────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: oms_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: oms_kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  # ─────────────────────────────────────────────
+  # OMS Application
+  # ─────────────────────────────────────────────
+  oms:
+    image: order-management-service:latest
+    container_name: oms_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: host=postgres user=postgres password=postgres dbname=oms_db port=5432 sslmode=disable
+      KAFKA_BROKER: kafka:9092
+      PORT: 8080
+
+volumes:
+  postgres_data:
