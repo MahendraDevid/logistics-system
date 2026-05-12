@@ -319,14 +319,21 @@ pipeline {
         stage('OMS - Functional Test') {
             steps {
                 dir('order-management-service') {
+                    // 1. Jalankan database untuk testing
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
-                    bat 'timeout /t 15 /nobreak > nul'
+                    
+                    // 2. Ganti timeout Windows dengan sleep native Jenkins
+                    sleep time: 15, unit: 'SECONDS'
+                    
+                    // 3. Jalankan functional test
                     bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=oms_test port=5436 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
                 }
             }
             post {
                 always {
-                    dir('order-management-service') { bat 'docker-compose -f deployments/docker-compose.test.yml down -v' }
+                    dir('order-management-service') { 
+                        bat 'docker-compose -f deployments/docker-compose.test.yml down -v' 
+                    }
                 }
             }
         }
