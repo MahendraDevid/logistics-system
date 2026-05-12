@@ -1,0 +1,17 @@
+# Binary
+*.exe
+*.exe~
+
+# Go
+*/go.sum
+
+# Environment
+.env
+*.env
+
+# IDE
+.vscode/
+.idea/
+
+# Test artifacts
+coverage.out
