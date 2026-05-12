@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
         - name: warehouse-service
-          image: YOUR_DOCKERHUB/warehouse-service:latest
+          image: madeu30/warehouse-service:latest
           imagePullPolicy: Always
           
           ports:

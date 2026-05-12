@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: settlement-service
-          image: YOUR_DOCKERHUB/settlement-service:latest
+          image: madeu30/settlement-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8081

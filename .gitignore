@@ -15,3 +15,7 @@
 
 # Test artifacts
 coverage.out
+
+# Kubeconfig untuk Jenkins (Secret file, ID: kube-config). Hasil perintah:
+#   kubectl config view --flatten --minify > config-portable
+/config-portable
