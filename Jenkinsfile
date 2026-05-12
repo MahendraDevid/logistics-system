@@ -316,23 +316,23 @@ pipeline {
             }
         }
 
-        stage('OMS - Functional Test') {
+        stage('WMS - Functional Test') {
             steps {
-                dir('order-management-service') {
-                    // 1. Jalankan database untuk testing
+                dir('warehouse-service') {
+                    // 1. Jalankan container database untuk test
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
                     
-                    // 2. Ganti timeout Windows dengan sleep native Jenkins
+                    // 2. Ganti 'bat timeout...' dengan sleep native Jenkins
                     sleep time: 15, unit: 'SECONDS'
                     
-                    // 3. Jalankan functional test
-                    bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=oms_test port=5436 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
+                    // 3. Jalankan functional test kamu
+                    bat 'set TEST_DATABASE_URL=... && go test -v -tags=functional ...' // Sesuaikan dengan perintah aslimu
                 }
             }
             post {
                 always {
-                    dir('order-management-service') { 
-                        bat 'docker-compose -f deployments/docker-compose.test.yml down -v' 
+                    dir('warehouse-service') {
+                        bat 'docker-compose -f deployments/docker-compose.test.yml down -v'
                     }
                 }
             }
