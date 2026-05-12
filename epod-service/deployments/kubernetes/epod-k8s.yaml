@@ -1,0 +1,121 @@
+# ==========================================
+# CONFIGMAP & SECRET: e-POD Service
+# ==========================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: epod-config
+data:
+  db_host: "mysql-service:3306"
+  kafka_broker: "kafka-service:9092"
+  s3_bucket_name: "epod-production-bucket"
+  s3_region: "ap-southeast-1"
+  app_port: "8080"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: epod-secret
+type: Opaque
+data:
+  # Base64 encoded secrets
+  db_password: cGFzc3dvcmQxMjM=
+  aws_access_key: QUtJQURVTU1ZS0VZWlhZWA==
+  aws_secret_key: RHVtbXlTZWNyZXRLZXlWYWx1ZTEyMzQ1Njc4OTA=
+
+---
+# ==========================================
+# DEPLOYMENT: e-POD Service
+# ==========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: epod-service
+  labels:
+    app: epod-service
+    version: "1.0"
+spec:
+  replicas: 2  # 2 replica cukup untuk 100 - 200 RPS
+  selector:
+    matchLabels:
+      app: epod-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: epod-service
+    spec:
+      containers:
+        - name: epod-service
+          image: madeu30/epod-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: epod-config
+                  key: db_host
+            - name: KAFKA_BROKER
+              valueFrom:
+                configMapKeyRef:
+                  name: epod-config
+                  key: kafka_broker
+            - name: S3_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: epod-config
+                  key: s3_bucket_name
+            - name: AWS_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: epod-secret
+                  key: aws_access_key
+            - name: AWS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: epod-secret
+                  key: aws_secret_key
+          resources:
+            requests:
+              memory: "256Mi"  # Kapasitas RAM lebih besar untuk buffer file gambar
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"      # CPU tidak perlu terlalu tinggi, lebih butuh memori dan I/O
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+
+---
+# ==========================================
+# SERVICE: e-POD Service
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: epod-service
+spec:
+  selector:
+    app: epod-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP

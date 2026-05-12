@@ -17,13 +17,14 @@ pipeline {
             }
         }
 
-        // ── WAREHOUSE SERVICE ──────────────────────────────────────
+        // ===================================================================
+        // ── 1. WAREHOUSE SERVICE ───────────────────────────────────────────
+        // ===================================================================
 
         stage('WMS - Unit Test') {
             steps {
                 echo "=== Unit Test: Warehouse Service ==="
                 dir('warehouse-service') {
-                    // Menjamin semua library terdownload sebelum test
                     bat 'go mod tidy'
                     bat 'go test -v -count=1 ./internal/...'
                 }
@@ -46,7 +47,6 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS',
                         usernameVariable: 'DOCKER_USER'
                     )]) {
-                        // Username registry = DOCKER_HUB_USER (madeu30). Field Username di credential boleh salah; yang dipakai password/token saja.
                         powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
                         bat "docker build -t %DOCKER_HUB_USER%/warehouse-service:latest -f deployments/Dockerfile ."
                     }
@@ -58,16 +58,13 @@ pipeline {
             steps {
                 dir('warehouse-service') {
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
-                    // Menunggu DB siap (15 detik)
                     bat 'timeout /t 15 /nobreak > nul'
                     bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=wms_test port=5433 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
                 }
             }
             post {
                 always {
-                    dir('warehouse-service') {
-                        bat 'docker-compose -f deployments/docker-compose.test.yml down -v'
-                    }
+                    dir('warehouse-service') { bat 'docker-compose -f deployments/docker-compose.test.yml down -v' }
                 }
             }
         }
@@ -85,7 +82,9 @@ pipeline {
             }
         }
 
-        // ── SETTLEMENT SERVICE ─────────────────────────────────────
+        // ===================================================================
+        // ── 2. SETTLEMENT SERVICE ──────────────────────────────────────────
+        // ===================================================================
 
         stage('Settlement - Unit Test') {
             steps {
@@ -130,9 +129,7 @@ pipeline {
             }
             post {
                 always {
-                    dir('settlement-service') {
-                        bat 'docker-compose -f deployments/docker-compose.test.yml down -v'
-                    }
+                    dir('settlement-service') { bat 'docker-compose -f deployments/docker-compose.test.yml down -v' }
                 }
             }
         }
@@ -150,13 +147,214 @@ pipeline {
             }
         }
 
-        // ── DEPLOYMENT ─────────────────────────────────────────────
+        // ===================================================================
+        // ── 3. PRICING SERVICE ─────────────────────────────────────────────
+        // ===================================================================
+
+        stage('Pricing - Unit Test') {
+            steps {
+                echo "=== Unit Test: Pricing Service ==="
+                dir('pricing-service') {
+                    bat 'go mod tidy'
+                    bat 'go test -v -count=1 ./internal/...'
+                }
+            }
+        }
+
+        stage('Pricing - Lint') {
+            steps {
+                dir('pricing-service') {
+                    bat 'go vet ./...'
+                }
+            }
+        }
+
+        stage('Pricing - Build Image') {
+            steps {
+                dir('pricing-service') {
+                    withCredentials([usernamePassword(
+                        credentialsId: "${DOCKER_HUB_ID}",
+                        passwordVariable: 'DOCKER_PASS',
+                        usernameVariable: 'DOCKER_USER'
+                    )]) {
+                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                        bat "docker build -t %DOCKER_HUB_USER%/pricing-service:latest -f deployments/Dockerfile ."
+                    }
+                }
+            }
+        }
+
+        stage('Pricing - Functional Test') {
+            steps {
+                dir('pricing-service') {
+                    bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
+                    bat 'timeout /t 15 /nobreak > nul'
+                    bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=pricing_test port=5435 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
+                }
+            }
+            post {
+                always {
+                    dir('pricing-service') { bat 'docker-compose -f deployments/docker-compose.test.yml down -v' }
+                }
+            }
+        }
+
+        stage('Pricing - Push Image') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: "${DOCKER_HUB_ID}",
+                    passwordVariable: 'DOCKER_PASS',
+                    usernameVariable: 'DOCKER_USER'
+                )]) {
+                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                    bat "docker push %DOCKER_HUB_USER%/pricing-service:latest"
+                }
+            }
+        }
+
+        // ===================================================================
+        // ── 4. E-POD SERVICE ───────────────────────────────────────────────
+        // ===================================================================
+
+        stage('e-POD - Unit Test') {
+            steps {
+                echo "=== Unit Test: e-POD Service ==="
+                dir('epod-service') {
+                    bat 'go mod tidy'
+                    bat 'go test -v -count=1 ./internal/...'
+                }
+            }
+        }
+
+        stage('e-POD - Lint') {
+            steps {
+                dir('epod-service') {
+                    bat 'go vet ./...'
+                }
+            }
+        }
+
+        stage('e-POD - Build Image') {
+            steps {
+                dir('epod-service') {
+                    withCredentials([usernamePassword(
+                        credentialsId: "${DOCKER_HUB_ID}",
+                        passwordVariable: 'DOCKER_PASS',
+                        usernameVariable: 'DOCKER_USER'
+                    )]) {
+                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                        bat "docker build -t %DOCKER_HUB_USER%/epod-service:latest -f deployments/Dockerfile ."
+                    }
+                }
+            }
+        }
+
+        stage('e-POD - Functional Test') {
+            steps {
+                dir('epod-service') {
+                    bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
+                    bat 'timeout /t 15 /nobreak > nul'
+                    // Karena e-POD menggunakan MySQL, format connection string-nya berbeda
+                    bat 'set TEST_DATABASE_URL=testuser:testpass@tcp(localhost:3307)/epod_test && go test -v -tags=functional -count=1 ./tests/functional/...'
+                }
+            }
+            post {
+                always {
+                    dir('epod-service') { bat 'docker-compose -f deployments/docker-compose.test.yml down -v' }
+                }
+            }
+        }
+
+        stage('e-POD - Push Image') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: "${DOCKER_HUB_ID}",
+                    passwordVariable: 'DOCKER_PASS',
+                    usernameVariable: 'DOCKER_USER'
+                )]) {
+                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                    bat "docker push %DOCKER_HUB_USER%/epod-service:latest"
+                }
+            }
+        }
+
+        // ===================================================================
+        // ── 5. ORDER MANAGEMENT SERVICE ────────────────────────────────────
+        // ===================================================================
+
+        stage('OMS - Unit Test') {
+            steps {
+                echo "=== Unit Test: Order Management Service ==="
+                dir('order-management-service') {
+                    bat 'go mod tidy'
+                    bat 'go test -v -count=1 ./internal/...'
+                }
+            }
+        }
+
+        stage('OMS - Lint') {
+            steps {
+                dir('order-management-service') {
+                    bat 'go vet ./...'
+                }
+            }
+        }
+
+        stage('OMS - Build Image') {
+            steps {
+                dir('order-management-service') {
+                    withCredentials([usernamePassword(
+                        credentialsId: "${DOCKER_HUB_ID}",
+                        passwordVariable: 'DOCKER_PASS',
+                        usernameVariable: 'DOCKER_USER'
+                    )]) {
+                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                        bat "docker build -t %DOCKER_HUB_USER%/order-management-service:latest -f deployments/Dockerfile ."
+                    }
+                }
+            }
+        }
+
+        stage('OMS - Functional Test') {
+            steps {
+                dir('order-management-service') {
+                    bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
+                    bat 'timeout /t 15 /nobreak > nul'
+                    bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=oms_test port=5436 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
+                }
+            }
+            post {
+                always {
+                    dir('order-management-service') { bat 'docker-compose -f deployments/docker-compose.test.yml down -v' }
+                }
+            }
+        }
+
+        stage('OMS - Push Image') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: "${DOCKER_HUB_ID}",
+                    passwordVariable: 'DOCKER_PASS',
+                    usernameVariable: 'DOCKER_USER'
+                )]) {
+                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                    bat "docker push %DOCKER_HUB_USER%/order-management-service:latest"
+                }
+            }
+        }
+
+        // ===================================================================
+        // ── 6. DEPLOYMENT & VERIFICATION ───────────────────────────────────
+        // ===================================================================
 
         stage('Deploy to Kubernetes') {
             steps {
                 withCredentials([file(credentialsId: "${KUBE_CONFIG_ID}", variable: 'KUBECONFIG_FILE')]) {
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% apply -f warehouse-service/deployments/kubernetes/"
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% apply -f settlement-service/deployments/kubernetes/"
+                    bat "kubectl --kubeconfig=%KUBECONFIG_FILE% apply -f pricing-service/deployments/kubernetes/"
+                    bat "kubectl --kubeconfig=%KUBECONFIG_FILE% apply -f epod-service/deployments/kubernetes/"
+                    bat "kubectl --kubeconfig=%KUBECONFIG_FILE% apply -f order-management-service/deployments/kubernetes/"
                 }
             }
         }
@@ -166,6 +364,13 @@ pipeline {
                 withCredentials([file(credentialsId: "${KUBE_CONFIG_ID}", variable: 'KUBECONFIG_FILE')]) {
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% get pods"
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% get svc"
+                    
+                    // Opsional: Memastikan rollout selesai (jika salah satu crash, pipeline akan merah)
+                    bat "kubectl --kubeconfig=%KUBECONFIG_FILE% rollout status deployment/warehouse-service --timeout=60s"
+                    bat "kubectl --kubeconfig=%KUBECONFIG_FILE% rollout status deployment/settlement-service --timeout=60s"
+                    bat "kubectl --kubeconfig=%KUBECONFIG_FILE% rollout status deployment/pricing-service --timeout=60s"
+                    bat "kubectl --kubeconfig=%KUBECONFIG_FILE% rollout status deployment/epod-service --timeout=60s"
+                    bat "kubectl --kubeconfig=%KUBECONFIG_FILE% rollout status deployment/order-management-service --timeout=60s"
                 }
             }
         }
@@ -173,10 +378,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Pipeline berhasil! Kedua service sudah ter-deploy ke Kubernetes."
+            echo "✅ Pipeline berhasil! Seluruh service sudah ter-deploy ke Kubernetes."
         }
         failure {
-            echo "❌ Pipeline gagal! Periksa log build untuk detail error."
+            echo "❌ Pipeline gagal! Periksa log build di Jenkins untuk melihat tahap mana yang bermasalah."
         }
     }
 }
