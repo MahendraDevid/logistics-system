@@ -17,8 +17,6 @@ pipeline {
             }
         }
 
-        // ── WAREHOUSE SERVICE ──────────────────────────────────────
-
         stage('WMS - Unit Test') {
             steps {
                 echo "=== Unit Test: Warehouse Service ==="
@@ -47,12 +45,8 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS',
                         usernameVariable: 'DOCKER_USER'
                     )]) {
-                        bat """
-                            echo %DOCKER_PASS% > docker_pass.txt
-                            docker login -u %DOCKER_USER% --password-stdin < docker_pass.txt
-                            del docker_pass.txt
-                            docker build -t %DOCKER_HUB_USER%/warehouse-service:latest -f deployments/Dockerfile .
-                        """
+                        bat 'docker login -u %DOCKER_USER% -p %DOCKER_PASS%'
+                        bat 'docker build -t %DOCKER_HUB_USER%/warehouse-service:latest -f deployments/Dockerfile .'
                     }
                 }
             }
@@ -84,17 +78,11 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS',
                     usernameVariable: 'DOCKER_USER'
                 )]) {
-                    bat """
-                        echo %DOCKER_PASS% > docker_pass.txt
-                        docker login -u %DOCKER_USER% --password-stdin < docker_pass.txt
-                        del docker_pass.txt
-                        docker push %DOCKER_HUB_USER%/warehouse-service:latest
-                    """
+                    bat 'docker login -u %DOCKER_USER% -p %DOCKER_PASS%'
+                    bat 'docker push %DOCKER_HUB_USER%/warehouse-service:latest'
                 }
             }
         }
-
-        // ── SETTLEMENT SERVICE ─────────────────────────────────────
 
         stage('Settlement - Unit Test') {
             steps {
@@ -124,12 +112,8 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS',
                         usernameVariable: 'DOCKER_USER'
                     )]) {
-                        bat """
-                            echo %DOCKER_PASS% > docker_pass.txt
-                            docker login -u %DOCKER_USER% --password-stdin < docker_pass.txt
-                            del docker_pass.txt
-                            docker build -t %DOCKER_HUB_USER%/settlement-service:latest -f deployments/Dockerfile .
-                        """
+                        bat 'docker login -u %DOCKER_USER% -p %DOCKER_PASS%'
+                        bat 'docker build -t %DOCKER_HUB_USER%/settlement-service:latest -f deployments/Dockerfile .'
                     }
                 }
             }
@@ -161,24 +145,18 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS',
                     usernameVariable: 'DOCKER_USER'
                 )]) {
-                    bat """
-                        echo %DOCKER_PASS% > docker_pass.txt
-                        docker login -u %DOCKER_USER% --password-stdin < docker_pass.txt
-                        del docker_pass.txt
-                        docker push %DOCKER_HUB_USER%/settlement-service:latest
-                    """
+                    bat 'docker login -u %DOCKER_USER% -p %DOCKER_PASS%'
+                    bat 'docker push %DOCKER_HUB_USER%/settlement-service:latest'
                 }
             }
         }
-
-        // ── DEPLOYMENT ─────────────────────────────────────────────
 
         stage('Deploy to Kubernetes') {
             steps {
                 echo "=== Deploy ke Kubernetes ==="
                 withCredentials([file(credentialsId: "${KUBE_CONFIG_ID}", variable: 'KUBECONFIG_FILE')]) {
-                    bat "kubectl --kubeconfig=%KUBECONFIG_FILE% apply -f warehouse-service/deployments/kubernetes/"
-                    bat "kubectl --kubeconfig=%KUBECONFIG_FILE% apply -f settlement-service/deployments/kubernetes/"
+                    bat 'kubectl --kubeconfig=%KUBECONFIG_FILE% apply -f warehouse-service/deployments/kubernetes/'
+                    bat 'kubectl --kubeconfig=%KUBECONFIG_FILE% apply -f settlement-service/deployments/kubernetes/'
                 }
             }
         }
@@ -187,8 +165,8 @@ pipeline {
             steps {
                 echo "=== Verifikasi Deployment ==="
                 withCredentials([file(credentialsId: "${KUBE_CONFIG_ID}", variable: 'KUBECONFIG_FILE')]) {
-                    bat "kubectl --kubeconfig=%KUBECONFIG_FILE% get pods"
-                    bat "kubectl --kubeconfig=%KUBECONFIG_FILE% get svc"
+                    bat 'kubectl --kubeconfig=%KUBECONFIG_FILE% get pods'
+                    bat 'kubectl --kubeconfig=%KUBECONFIG_FILE% get svc'
                 }
             }
         }
