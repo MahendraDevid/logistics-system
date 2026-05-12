@@ -1,0 +1,33 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = 'dispatch-fleet'
+    }
+
+    stages {
+        stage('Unit Testing') {
+            steps {
+                // Menjalankan testing tanpa akses DB (menggunakan mocks)
+                sh 'go test -v ./internal/service/...'
+            }
+        }
+        stage('Linting') {
+            steps {
+                sh 'go vet ./...'
+            }
+        }
+        stage('Build Image') {
+            steps {
+                // Simulasi build binary atau docker image
+                sh 'go build -o bin/${APP_NAME} cmd/main.go'
+            }
+        }
+        stage('Functional Testing') {
+            steps {
+                // Menjalankan functional test (butuh DB up)
+                sh 'make functional-test'
+            }
+        }
+    }
+}
