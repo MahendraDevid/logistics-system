@@ -12,7 +12,7 @@ pipeline {
         stage('Checkout Repository') {
             steps {
                 echo "=== Mengambil kode terbaru ==="
-                git branch: 'main',
+                git branch: 'made',
                     url: 'https://github.com/MahendraDevid/logistics-system.git'
             }
         }
@@ -23,7 +23,6 @@ pipeline {
             steps {
                 echo "=== Unit Test: Warehouse Service ==="
                 dir('warehouse-service') {
-                    // Menjamin semua library terdownload sebelum test
                     bat 'go mod tidy'
                     bat 'go test -v -count=1 ./internal/...'
                 }
@@ -32,6 +31,7 @@ pipeline {
 
         stage('WMS - Lint') {
             steps {
+                echo "=== Lint: Warehouse Service ==="
                 dir('warehouse-service') {
                     bat 'go vet ./...'
                 }
@@ -40,14 +40,19 @@ pipeline {
 
         stage('WMS - Build Image') {
             steps {
+                echo "=== Build Docker Image: Warehouse Service ==="
                 dir('warehouse-service') {
                     withCredentials([usernamePassword(
                         credentialsId: "${DOCKER_HUB_ID}",
                         passwordVariable: 'DOCKER_PASS',
                         usernameVariable: 'DOCKER_USER'
                     )]) {
-                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin'
-                        bat "docker build -t %DOCKER_HUB_USER%/warehouse-service:latest -f deployments/Dockerfile ."
+                        bat """
+                            echo %DOCKER_PASS% > docker_pass.txt
+                            docker login -u %DOCKER_USER% --password-stdin < docker_pass.txt
+                            del docker_pass.txt
+                            docker build -t %DOCKER_HUB_USER%/warehouse-service:latest -f deployments/Dockerfile .
+                        """
                     }
                 }
             }
@@ -55,9 +60,9 @@ pipeline {
 
         stage('WMS - Functional Test') {
             steps {
+                echo "=== Functional Test: Warehouse Service ==="
                 dir('warehouse-service') {
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
-                    // Menunggu DB siap (15 detik)
                     bat 'timeout /t 15 /nobreak > nul'
                     bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=wms_test port=5433 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
                 }
@@ -73,13 +78,18 @@ pipeline {
 
         stage('WMS - Push Image') {
             steps {
+                echo "=== Push Image: Warehouse Service ==="
                 withCredentials([usernamePassword(
                     credentialsId: "${DOCKER_HUB_ID}",
                     passwordVariable: 'DOCKER_PASS',
                     usernameVariable: 'DOCKER_USER'
                 )]) {
-                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin'
-                    bat "docker push %DOCKER_HUB_USER%/warehouse-service:latest"
+                    bat """
+                        echo %DOCKER_PASS% > docker_pass.txt
+                        docker login -u %DOCKER_USER% --password-stdin < docker_pass.txt
+                        del docker_pass.txt
+                        docker push %DOCKER_HUB_USER%/warehouse-service:latest
+                    """
                 }
             }
         }
@@ -98,6 +108,7 @@ pipeline {
 
         stage('Settlement - Lint') {
             steps {
+                echo "=== Lint: Settlement Service ==="
                 dir('settlement-service') {
                     bat 'go vet ./...'
                 }
@@ -106,14 +117,19 @@ pipeline {
 
         stage('Settlement - Build Image') {
             steps {
+                echo "=== Build Docker Image: Settlement Service ==="
                 dir('settlement-service') {
                     withCredentials([usernamePassword(
                         credentialsId: "${DOCKER_HUB_ID}",
                         passwordVariable: 'DOCKER_PASS',
                         usernameVariable: 'DOCKER_USER'
                     )]) {
-                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin'
-                        bat "docker build -t %DOCKER_HUB_USER%/settlement-service:latest -f deployments/Dockerfile ."
+                        bat """
+                            echo %DOCKER_PASS% > docker_pass.txt
+                            docker login -u %DOCKER_USER% --password-stdin < docker_pass.txt
+                            del docker_pass.txt
+                            docker build -t %DOCKER_HUB_USER%/settlement-service:latest -f deployments/Dockerfile .
+                        """
                     }
                 }
             }
@@ -121,6 +137,7 @@ pipeline {
 
         stage('Settlement - Functional Test') {
             steps {
+                echo "=== Functional Test: Settlement Service ==="
                 dir('settlement-service') {
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
                     bat 'timeout /t 15 /nobreak > nul'
@@ -138,13 +155,18 @@ pipeline {
 
         stage('Settlement - Push Image') {
             steps {
+                echo "=== Push Image: Settlement Service ==="
                 withCredentials([usernamePassword(
                     credentialsId: "${DOCKER_HUB_ID}",
                     passwordVariable: 'DOCKER_PASS',
                     usernameVariable: 'DOCKER_USER'
                 )]) {
-                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin'
-                    bat "docker push %DOCKER_HUB_USER%/settlement-service:latest"
+                    bat """
+                        echo %DOCKER_PASS% > docker_pass.txt
+                        docker login -u %DOCKER_USER% --password-stdin < docker_pass.txt
+                        del docker_pass.txt
+                        docker push %DOCKER_HUB_USER%/settlement-service:latest
+                    """
                 }
             }
         }
@@ -153,6 +175,7 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
+                echo "=== Deploy ke Kubernetes ==="
                 withCredentials([file(credentialsId: "${KUBE_CONFIG_ID}", variable: 'KUBECONFIG_FILE')]) {
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% apply -f warehouse-service/deployments/kubernetes/"
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% apply -f settlement-service/deployments/kubernetes/"
@@ -162,6 +185,7 @@ pipeline {
 
         stage('Verify Deployment') {
             steps {
+                echo "=== Verifikasi Deployment ==="
                 withCredentials([file(credentialsId: "${KUBE_CONFIG_ID}", variable: 'KUBECONFIG_FILE')]) {
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% get pods"
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% get svc"
@@ -172,10 +196,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Pipeline berhasil! Kedua service sudah ter-deploy ke Kubernetes."
+            echo "Pipeline berhasil! Kedua service sudah ter-deploy ke Kubernetes."
         }
         failure {
-            echo "❌ Pipeline gagal! Periksa log build untuk detail error."
+            echo "Pipeline gagal! Periksa log build untuk detail error."
         }
     }
 }
