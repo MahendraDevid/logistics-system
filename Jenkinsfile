@@ -47,7 +47,6 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS',
                         usernameVariable: 'DOCKER_USER'
                     )]) {
-                        // HAPUS baris powershell, GANTI dengan baris bat ini:
                         bat "docker login -u %DOCKER_HUB_USER% -p %DOCKER_PASS%"
                         bat "docker build -t %DOCKER_HUB_USER%/warehouse-service:latest -f deployments/Dockerfile ."
                     }
@@ -59,7 +58,7 @@ pipeline {
             steps {
                 dir('warehouse-service') {
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
-                    bat 'timeout /t 15 /nobreak > nul'
+                    sleep time: 15, unit: 'SECONDS'
                     bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=wms_test port=5433 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
                 }
             }
@@ -77,7 +76,7 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS',
                     usernameVariable: 'DOCKER_USER'
                 )]) {
-                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                    bat "docker login -u %DOCKER_HUB_USER% -p %DOCKER_PASS%"
                     bat "docker push %DOCKER_HUB_USER%/warehouse-service:latest"
                 }
             }
@@ -113,7 +112,7 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS',
                         usernameVariable: 'DOCKER_USER'
                     )]) {
-                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                        bat "docker login -u %DOCKER_HUB_USER% -p %DOCKER_PASS%"
                         bat "docker build -t %DOCKER_HUB_USER%/settlement-service:latest -f deployments/Dockerfile ."
                     }
                 }
@@ -124,7 +123,7 @@ pipeline {
             steps {
                 dir('settlement-service') {
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
-                    bat 'timeout /t 15 /nobreak > nul'
+                    sleep time: 15, unit: 'SECONDS'
                     bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=settlement_test port=5434 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
                 }
             }
@@ -142,7 +141,7 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS',
                     usernameVariable: 'DOCKER_USER'
                 )]) {
-                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                    bat "docker login -u %DOCKER_HUB_USER% -p %DOCKER_PASS%"
                     bat "docker push %DOCKER_HUB_USER%/settlement-service:latest"
                 }
             }
@@ -178,7 +177,7 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS',
                         usernameVariable: 'DOCKER_USER'
                     )]) {
-                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                        bat "docker login -u %DOCKER_HUB_USER% -p %DOCKER_PASS%"
                         bat "docker build -t %DOCKER_HUB_USER%/pricing-service:latest -f deployments/Dockerfile ."
                     }
                 }
@@ -189,7 +188,7 @@ pipeline {
             steps {
                 dir('pricing-service') {
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
-                    bat 'timeout /t 15 /nobreak > nul'
+                    sleep time: 15, unit: 'SECONDS'
                     bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=pricing_test port=5435 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
                 }
             }
@@ -207,7 +206,7 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS',
                     usernameVariable: 'DOCKER_USER'
                 )]) {
-                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                    bat "docker login -u %DOCKER_HUB_USER% -p %DOCKER_PASS%"
                     bat "docker push %DOCKER_HUB_USER%/pricing-service:latest"
                 }
             }
@@ -243,7 +242,7 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS',
                         usernameVariable: 'DOCKER_USER'
                     )]) {
-                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                        bat "docker login -u %DOCKER_HUB_USER% -p %DOCKER_PASS%"
                         bat "docker build -t %DOCKER_HUB_USER%/epod-service:latest -f deployments/Dockerfile ."
                     }
                 }
@@ -254,8 +253,7 @@ pipeline {
             steps {
                 dir('epod-service') {
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
-                    bat 'timeout /t 15 /nobreak > nul'
-                    // Karena e-POD menggunakan MySQL, format connection string-nya berbeda
+                    sleep time: 15, unit: 'SECONDS'
                     bat 'set TEST_DATABASE_URL=testuser:testpass@tcp(localhost:3307)/epod_test && go test -v -tags=functional -count=1 ./tests/functional/...'
                 }
             }
@@ -273,7 +271,7 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS',
                     usernameVariable: 'DOCKER_USER'
                 )]) {
-                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                    bat "docker login -u %DOCKER_HUB_USER% -p %DOCKER_PASS%"
                     bat "docker push %DOCKER_HUB_USER%/epod-service:latest"
                 }
             }
@@ -309,29 +307,24 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS',
                         usernameVariable: 'DOCKER_USER'
                     )]) {
-                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                        bat "docker login -u %DOCKER_HUB_USER% -p %DOCKER_PASS%"
                         bat "docker build -t %DOCKER_HUB_USER%/order-management-service:latest -f deployments/Dockerfile ."
                     }
                 }
             }
         }
 
-        stage('WMS - Functional Test') {
+        stage('OMS - Functional Test') {
             steps {
-                dir('warehouse-service') {
-                    // 1. Jalankan container database untuk test
+                dir('order-management-service') {
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
-                    
-                    // 2. Ganti 'bat timeout...' dengan sleep native Jenkins
                     sleep time: 15, unit: 'SECONDS'
-                    
-                    // 3. Jalankan functional test kamu
-                    bat 'set TEST_DATABASE_URL=... && go test -v -tags=functional ...' // Sesuaikan dengan perintah aslimu
+                    bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=oms_test port=5436 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
                 }
             }
             post {
                 always {
-                    dir('warehouse-service') {
+                    dir('order-management-service') {
                         bat 'docker-compose -f deployments/docker-compose.test.yml down -v'
                     }
                 }
@@ -345,7 +338,7 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS',
                     usernameVariable: 'DOCKER_USER'
                 )]) {
-                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                    bat "docker login -u %DOCKER_HUB_USER% -p %DOCKER_PASS%"
                     bat "docker push %DOCKER_HUB_USER%/order-management-service:latest"
                 }
             }
@@ -373,7 +366,6 @@ pipeline {
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% get pods"
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% get svc"
                     
-                    // Opsional: Memastikan rollout selesai (jika salah satu crash, pipeline akan merah)
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% rollout status deployment/warehouse-service --timeout=60s"
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% rollout status deployment/settlement-service --timeout=60s"
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% rollout status deployment/pricing-service --timeout=60s"
