@@ -44,8 +44,8 @@ func (s *WarehouseFunctionalSuite) SetupSuite() {
     db, err := gorm.Open(postgres.Open(dbURL), &gorm.Config{})
     s.Require().NoError(err, "Gagal koneksi ke database test")
 
-    // Auto migrate — buat tabel otomatis
-    err = db.AutoMigrate(&domain.Package{}, &domain.Manifest{})
+    // Auto migrate — manifest dulu agar FK packages.manifest_id valid
+    err = db.AutoMigrate(&domain.Manifest{}, &domain.Package{})
     s.Require().NoError(err)
 
     s.db = db

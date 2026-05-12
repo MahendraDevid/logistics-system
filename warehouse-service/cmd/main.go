@@ -36,8 +36,8 @@ func main() {
 		log.Fatalf("Gagal koneksi ke database: %v", err)
 	}
 
-	// Auto migrate tabel
-	if err := db.AutoMigrate(&domain.Package{}, &domain.Manifest{}); err != nil {
+	// Auto migrate tabel (manifest dulu karena packages punya FK ke manifests)
+	if err := db.AutoMigrate(&domain.Manifest{}, &domain.Package{}); err != nil {
 		log.Fatalf("Gagal migrate database: %v", err)
 	}
 
