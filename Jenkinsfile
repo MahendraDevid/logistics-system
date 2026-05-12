@@ -46,7 +46,8 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS',
                         usernameVariable: 'DOCKER_USER'
                     )]) {
-                        bat 'echo %DOCKER_PASS%| docker login -u %DOCKER_USER% --password-stdin'
+                        // Hindari echo %VAR%| di CMD (password mudah rusak / terpotong). Pakai stdin dari PowerShell.
+                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin'
                         bat "docker build -t %DOCKER_HUB_USER%/warehouse-service:latest -f deployments/Dockerfile ."
                     }
                 }
@@ -78,7 +79,7 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS',
                     usernameVariable: 'DOCKER_USER'
                 )]) {
-                    bat 'echo %DOCKER_PASS%| docker login -u %DOCKER_USER% --password-stdin'
+                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin'
                     bat "docker push %DOCKER_HUB_USER%/warehouse-service:latest"
                 }
             }
@@ -112,7 +113,7 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS',
                         usernameVariable: 'DOCKER_USER'
                     )]) {
-                        bat 'echo %DOCKER_PASS%| docker login -u %DOCKER_USER% --password-stdin'
+                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin'
                         bat "docker build -t %DOCKER_HUB_USER%/settlement-service:latest -f deployments/Dockerfile ."
                     }
                 }
@@ -143,7 +144,7 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS',
                     usernameVariable: 'DOCKER_USER'
                 )]) {
-                    bat 'echo %DOCKER_PASS%| docker login -u %DOCKER_USER% --password-stdin'
+                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin'
                     bat "docker push %DOCKER_HUB_USER%/settlement-service:latest"
                 }
             }
