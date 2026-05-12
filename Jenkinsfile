@@ -23,6 +23,8 @@ pipeline {
             steps {
                 echo "=== Unit Test: Warehouse Service ==="
                 dir('warehouse-service') {
+                    // Menjamin semua library terdownload sebelum test
+                    bat 'go mod tidy'
                     bat 'go test -v -count=1 ./internal/...'
                 }
             }
@@ -55,7 +57,8 @@ pipeline {
             steps {
                 dir('warehouse-service') {
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
-                    bat 'ping -n 15 127.0.0.1 > nul'
+                    // Menunggu DB siap (15 detik)
+                    bat 'timeout /t 15 /nobreak > nul'
                     bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=wms_test port=5433 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
                 }
             }
@@ -87,6 +90,7 @@ pipeline {
             steps {
                 echo "=== Unit Test: Settlement Service ==="
                 dir('settlement-service') {
+                    bat 'go mod tidy'
                     bat 'go test -v -count=1 ./internal/...'
                 }
             }
@@ -119,7 +123,7 @@ pipeline {
             steps {
                 dir('settlement-service') {
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
-                    bat 'ping -n 15 127.0.0.1 > nul'
+                    bat 'timeout /t 15 /nobreak > nul'
                     bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=settlement_test port=5434 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
                 }
             }
@@ -145,7 +149,7 @@ pipeline {
             }
         }
 
-        // ── DEPLOY KEDUANYA ────────────────────────────────────────
+        // ── DEPLOYMENT ─────────────────────────────────────────────
 
         stage('Deploy to Kubernetes') {
             steps {
@@ -168,10 +172,10 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline berhasil! Kedua service sudah ter-deploy."
+            echo "✅ Pipeline berhasil! Kedua service sudah ter-deploy ke Kubernetes."
         }
         failure {
-            echo "Pipeline gagal! Cek log di atas."
+            echo "❌ Pipeline gagal! Periksa log build untuk detail error."
         }
     }
 }
