@@ -57,7 +57,7 @@ pipeline {
                 echo "=== Functional Test: Warehouse Service ==="
                 dir('warehouse-service') {
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
-                    bat 'timeout /t 15 /nobreak > nul'
+                    bat 'ping -n 16 127.0.0.1'
                     bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=wms_test port=5433 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
                 }
             }
@@ -124,7 +124,7 @@ pipeline {
                 echo "=== Functional Test: Settlement Service ==="
                 dir('settlement-service') {
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
-                    bat 'timeout /t 15 /nobreak > nul'
+                    bat 'ping -n 16 127.0.0.1'
                     bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=settlement_test port=5434 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
                 }
             }
