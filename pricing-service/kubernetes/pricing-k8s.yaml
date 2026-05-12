@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
         - name: pricing-service
-          image: madeu30/pricing-service:latest
+          image: arpusauri/pricing-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

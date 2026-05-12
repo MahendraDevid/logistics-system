@@ -51,7 +51,7 @@ spec:
     spec:
       containers:
         - name: epod-service
-          image: madeu30/epod-service:latest
+          image: arpusauri/epod-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

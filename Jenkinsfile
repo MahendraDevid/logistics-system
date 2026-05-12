@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_USER = 'madeu30'
-        DOCKER_HUB_ID   = 'dockerhub-login'
+        DOCKER_HUB_USER = 'arpusauri'
+        DOCKER_HUB_ID   = 'docker-hub-credentials'
         KUBE_CONFIG_ID  = 'kube-config'
     }
 
@@ -12,7 +12,7 @@ pipeline {
         stage('Checkout Repository') {
             steps {
                 echo "=== Mengambil kode terbaru ==="
-                git branch: 'main',
+                git branch: 'arya',
                     url: 'https://github.com/MahendraDevid/logistics-system.git'
             }
         }
