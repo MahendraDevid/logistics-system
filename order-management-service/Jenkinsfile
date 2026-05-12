@@ -46,7 +46,7 @@ pipeline {
                         usernameVariable: 'DOCKER_USER'
                     )]) {
                         powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
-                        bat "docker build --platform linux/amd64 -t %DOCKER_HUB_USER%/order-management-service:latest ."
+                        bat "docker build --platform linux/amd64 -t %DOCKER_HUB_USER%/order-management-service:latest -f deployments/Dockerfile ."
                     }
                 }
             }
@@ -55,7 +55,7 @@ pipeline {
         stage('OMS - Functional Test') {
             steps {
                 dir('order-management-service') {
-                    bat 'docker-compose -f docker-compose.test.yml up -d postgres-test'
+                    bat 'docker-compose -f deployments/docker-compose.test.yml up -d postgres-test'
                     bat 'timeout /t 15 /nobreak > nul'
                     bat 'set TEST_DATABASE_URL=host=localhost user=postgres password=postgres dbname=oms_test_db port=5433 sslmode=disable && go test -v -count=1 ./tests/functional/...'
                 }
@@ -63,7 +63,7 @@ pipeline {
             post {
                 always {
                     dir('order-management-service') {
-                        bat 'docker-compose -f docker-compose.test.yml down -v'
+                        bat 'docker-compose -f deployments/docker-compose.test.yml down -v'
                     }
                 }
             }

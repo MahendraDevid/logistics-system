@@ -12,7 +12,7 @@ RUN go mod download && go mod tidy
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o oms ./main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o oms ./cmd/main.go
 
 # ─────────────────────────────────────────────
 # Stage 2: Runner
