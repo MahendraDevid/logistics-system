@@ -2,7 +2,13 @@ FROM golang:1.25.6-alpine AS builder
 RUN apk add --no-cache git ca-certificates
 WORKDIR /app
 COPY go.mod go.sum ./
-RUN go mod download
+# proxy.golang.org kadang putus di CI; direct sebagai fallback + beberapa retry
+ENV GOPROXY=https://proxy.golang.org,direct
+RUN ok=0; for i in 1 2 3 4 5; do \
+  go mod download && ok=1 && break; \
+  echo "go mod download failed, retry $$i/5 in 15s..."; \
+  sleep 15; \
+done; test "$$ok" = 1
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app/server ./cmd/main.go
 
