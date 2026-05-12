@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_USER = 'YOUR_DOCKERHUB_USERNAME'
+        DOCKER_HUB_USER = 'madeu30'
         DOCKER_HUB_ID   = 'dockerhub-login'
         KUBE_CONFIG_ID  = 'kube-config'
     }
@@ -13,7 +13,7 @@ pipeline {
             steps {
                 echo "=== Mengambil kode terbaru ==="
                 git branch: 'main',
-                    url: 'https://github.com/YOUR_USERNAME/logistics-system.git'
+                    url: 'https://github.com/MahendraDevid/logistics-system.git'
             }
         }
 
