@@ -46,8 +46,8 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS',
                         usernameVariable: 'DOCKER_USER'
                     )]) {
-                        // Hindari echo %VAR%| di CMD (password mudah rusak / terpotong). Pakai stdin dari PowerShell.
-                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin'
+                        // Username registry = DOCKER_HUB_USER (madeu30). Field Username di credential boleh salah; yang dipakai password/token saja.
+                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
                         bat "docker build -t %DOCKER_HUB_USER%/warehouse-service:latest -f deployments/Dockerfile ."
                     }
                 }
@@ -79,7 +79,7 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS',
                     usernameVariable: 'DOCKER_USER'
                 )]) {
-                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin'
+                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
                     bat "docker push %DOCKER_HUB_USER%/warehouse-service:latest"
                 }
             }
@@ -113,7 +113,7 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS',
                         usernameVariable: 'DOCKER_USER'
                     )]) {
-                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin'
+                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
                         bat "docker build -t %DOCKER_HUB_USER%/settlement-service:latest -f deployments/Dockerfile ."
                     }
                 }
@@ -144,7 +144,7 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS',
                     usernameVariable: 'DOCKER_USER'
                 )]) {
-                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin'
+                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
                     bat "docker push %DOCKER_HUB_USER%/settlement-service:latest"
                 }
             }
