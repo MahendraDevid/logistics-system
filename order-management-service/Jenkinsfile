@@ -2,88 +2,111 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "rangga05/order-management-service"
-        DOCKER_TAG   = "latest"
-        KUBECONFIG   = credentials('kubeconfig')
+        DOCKER_HUB_USER = 'rangga05'
+        DOCKER_HUB_ID   = 'dockerhub-login'
+        KUBE_CONFIG_ID  = 'kube-config'
     }
 
     stages {
 
-        stage('Checkout') {
+        stage('Checkout Repository') {
             steps {
-                checkout scm
+                echo "=== Mengambil kode terbaru ==="
+                git branch: 'main',
+                    url: 'https://github.com/MahendraDevid/logistics-system.git'
             }
         }
 
-        stage('Unit Tests') {
-            steps {
-                sh 'go test ./internal/... -v'
-            }
-        }
+        // ── ORDER MANAGEMENT SERVICE ───────────────────────────────
 
-        stage('Lint/Vet') {
+        stage('OMS - Unit Test') {
             steps {
-                sh 'go vet ./...'
-            }
-        }
-
-        stage('Build Image') {
-            steps {
-                sh 'docker build --platform linux/amd64 -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
-            }
-        }
-
-        stage('Functional Tests') {
-            environment {
-                TEST_DATABASE_URL = "host=localhost user=postgres password=postgres dbname=oms_test_db port=5433 sslmode=disable"
-            }
-            steps {
-                sh 'docker-compose -f docker-compose.test.yml up -d postgres-test'
-                sh 'sleep 5'
-                sh 'go test ./tests/... -v'
-                sh 'docker-compose -f docker-compose.test.yml down'
-            }
-        }
-
-        stage('Push Image') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-credentials',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                    sh 'docker push ${DOCKER_IMAGE}:${DOCKER_TAG}'
+                echo "=== Unit Test: Order Management Service ==="
+                dir('order-management-service') {
+                    bat 'go mod tidy'
+                    bat 'go test -v -count=1 ./internal/...'
                 }
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('OMS - Lint') {
             steps {
-                sh 'kubectl apply -f deployments/kubernetes/configmap.yaml'
-                sh 'kubectl apply -f deployments/kubernetes/postgres.yaml'
-                sh 'kubectl apply -f deployments/kubernetes/deployment.yaml'
-                sh 'kubectl rollout restart deployment/oms-app -n oms'
+                dir('order-management-service') {
+                    bat 'go vet ./...'
+                }
             }
         }
 
-        stage('Verify') {
+        stage('OMS - Build Image') {
             steps {
-                sh 'kubectl rollout status deployment/oms-app -n oms --timeout=60s'
-                sh 'kubectl get all -n oms'
+                dir('order-management-service') {
+                    withCredentials([usernamePassword(
+                        credentialsId: "${DOCKER_HUB_ID}",
+                        passwordVariable: 'DOCKER_PASS',
+                        usernameVariable: 'DOCKER_USER'
+                    )]) {
+                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                        bat "docker build --platform linux/amd64 -t %DOCKER_HUB_USER%/order-management-service:latest ."
+                    }
+                }
+            }
+        }
+
+        stage('OMS - Functional Test') {
+            steps {
+                dir('order-management-service') {
+                    bat 'docker-compose -f docker-compose.test.yml up -d postgres-test'
+                    bat 'timeout /t 15 /nobreak > nul'
+                    bat 'set TEST_DATABASE_URL=host=localhost user=postgres password=postgres dbname=oms_test_db port=5433 sslmode=disable && go test -v -count=1 ./tests/functional/...'
+                }
+            }
+            post {
+                always {
+                    dir('order-management-service') {
+                        bat 'docker-compose -f docker-compose.test.yml down -v'
+                    }
+                }
+            }
+        }
+
+        stage('OMS - Push Image') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: "${DOCKER_HUB_ID}",
+                    passwordVariable: 'DOCKER_PASS',
+                    usernameVariable: 'DOCKER_USER'
+                )]) {
+                    powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                    bat "docker push %DOCKER_HUB_USER%/order-management-service:latest"
+                }
+            }
+        }
+
+        stage('OMS - Deploy to Kubernetes') {
+            steps {
+                withCredentials([file(credentialsId: "${KUBE_CONFIG_ID}", variable: 'KUBECONFIG_FILE')]) {
+                    bat "kubectl --kubeconfig=%KUBECONFIG_FILE% apply -f order-management-service/deployments/kubernetes/"
+                    bat "kubectl --kubeconfig=%KUBECONFIG_FILE% rollout restart deployment/oms-app -n oms"
+                }
+            }
+        }
+
+        stage('OMS - Verify') {
+            steps {
+                withCredentials([file(credentialsId: "${KUBE_CONFIG_ID}", variable: 'KUBECONFIG_FILE')]) {
+                    bat "kubectl --kubeconfig=%KUBECONFIG_FILE% rollout status deployment/oms-app -n oms --timeout=60s"
+                    bat "kubectl --kubeconfig=%KUBECONFIG_FILE% get all -n oms"
+                }
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline OMS berhasil!'
+            echo "✅ Pipeline OMS berhasil!"
         }
         failure {
-            echo 'Pipeline OMS gagal!'
-        }
-        always {
-            sh 'docker-compose -f docker-compose.test.yml down || true'
+            echo "❌ Pipeline OMS gagal!"
         }
     }
 }
