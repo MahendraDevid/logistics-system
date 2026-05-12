@@ -47,7 +47,8 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS',
                         usernameVariable: 'DOCKER_USER'
                     )]) {
-                        powershell '$env:DOCKER_PASS | docker login -u $env:DOCKER_HUB_USER --password-stdin'
+                        // HAPUS baris powershell, GANTI dengan baris bat ini:
+                        bat "docker login -u %DOCKER_HUB_USER% -p %DOCKER_PASS%"
                         bat "docker build -t %DOCKER_HUB_USER%/warehouse-service:latest -f deployments/Dockerfile ."
                     }
                 }
