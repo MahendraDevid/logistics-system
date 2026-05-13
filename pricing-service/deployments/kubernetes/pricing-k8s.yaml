@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: epod-service
+  name: pricing-service
 
 spec:
   replicas: 2
 
   selector:
     matchLabels:
-      app: epod-service
+      app: pricing-service
 
   template:
     metadata:
       labels:
-        app: epod-service
+        app: pricing-service
 
     spec:
       containers:
-        - name: epod-service
-          image: arpusauri/epod-service:latest
+        - name: pricing-service
+          image: arpusauri/pricing-service:latest
 
           ports:
             - containerPort: 8080
@@ -27,11 +27,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: epod-service
+  name: pricing-service
 
 spec:
   selector:
-    app: epod-service
+    app: pricing-service
 
   ports:
     - port: 80
