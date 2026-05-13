@@ -59,12 +59,18 @@ pipeline {
                 dir('pricing-service') {
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
                     sleep time: 15, unit: 'SECONDS'
-                    bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=pricing_test port=5435 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
+
+                    bat '''
+                    set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=pricing_test port=5435 sslmode=disable ^
+                    && go test -v -tags=functional -count=1 ./internal/tests/functional/...
+                    '''
                 }
             }
             post {
                 always {
-                    dir('pricing-service') { bat 'docker-compose -f deployments/docker-compose.test.yml down -v' }
+                    dir('pricing-service') {
+                        bat 'docker-compose -f deployments/docker-compose.test.yml down -v'
+                    }
                 }
             }
         }
@@ -124,12 +130,18 @@ pipeline {
                 dir('epod-service') {
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
                     sleep time: 15, unit: 'SECONDS'
-                    bat 'set TEST_DATABASE_URL=testuser:testpass@tcp(localhost:3307)/epod_test && go test -v -tags=functional -count=1 ./tests/functional/...'
+
+                    bat '''
+                    set TEST_DATABASE_URL=testuser:testpass@tcp(localhost:3307)/epod_test ^
+                    && go test -v -tags=functional -count=1 ./internal/tests/functional/...
+                    '''
                 }
             }
             post {
                 always {
-                    dir('epod-service') { bat 'docker-compose -f deployments/docker-compose.test.yml down -v' }
+                    dir('epod-service') {
+                        bat 'docker-compose -f deployments/docker-compose.test.yml down -v'
+                    }
                 }
             }
         }
@@ -189,7 +201,11 @@ pipeline {
                 dir('order-management-service') {
                     bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
                     sleep time: 15, unit: 'SECONDS'
-                    bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=oms_test port=5436 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
+
+                    bat '''
+                    set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=oms_test port=5436 sslmode=disable ^
+                    && go test -v -tags=functional -count=1 ./internal/tests/functional/...
+                    '''
                 }
             }
             post {
@@ -221,6 +237,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 withCredentials([file(credentialsId: "${KUBE_CONFIG_ID}", variable: 'KUBECONFIG_FILE')]) {
+
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% apply -f warehouse-service/deployments/kubernetes/"
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% apply -f settlement-service/deployments/kubernetes/"
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% apply -f pricing-service/deployments/kubernetes/"
@@ -233,9 +250,10 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 withCredentials([file(credentialsId: "${KUBE_CONFIG_ID}", variable: 'KUBECONFIG_FILE')]) {
+
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% get pods"
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% get svc"
-                    
+
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% rollout status deployment/warehouse-service --timeout=60s"
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% rollout status deployment/settlement-service --timeout=60s"
                     bat "kubectl --kubeconfig=%KUBECONFIG_FILE% rollout status deployment/pricing-service --timeout=60s"
@@ -250,6 +268,7 @@ pipeline {
         success {
             echo "✅ Pipeline berhasil! Seluruh service sudah ter-deploy ke Kubernetes."
         }
+
         failure {
             echo "❌ Pipeline gagal! Periksa log build di Jenkins untuk melihat tahap mana yang bermasalah."
         }
