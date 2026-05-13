@@ -86,15 +86,15 @@ pipeline {
         // ── 2. SETTLEMENT SERVICE ──────────────────────────────────────────
         // ===================================================================
 
-        // stage('Settlement - Unit Test') {
-        //     steps {
-        //         echo "=== Unit Test: Settlement Service ==="
-        //         dir('settlement-service') {
-        //             bat 'go mod tidy'
-        //             bat 'go test -v -count=1 ./internal/...'
-        //         }
-        //     }
-        // }
+        stage('Settlement - Unit Test') {
+            steps {
+                echo "=== Unit Test: Settlement Service ==="
+                dir('settlement-service') {
+                    bat 'go mod tidy'
+                    bat 'go test -v -count=1 ./internal/...'
+                }
+            }
+        }
 
         stage('Settlement - Lint') {
             steps {
@@ -104,35 +104,35 @@ pipeline {
             }
         }
 
-        // stage('Settlement - Build Image') {
-        //     steps {
-        //         dir('settlement-service') {
-        //             withCredentials([usernamePassword(
-        //                 credentialsId: "${DOCKER_HUB_ID}",
-        //                 passwordVariable: 'DOCKER_PASS',
-        //                 usernameVariable: 'DOCKER_USER'
-        //             )]) {
-        //                 bat "docker login -u %DOCKER_HUB_USER% -p %DOCKER_PASS%"
-        //                 bat "docker build -t %DOCKER_HUB_USER%/settlement-service:latest -f deployments/Dockerfile ."
-        //             }
-        //         }
-        //     }
-        // }
+        stage('Settlement - Build Image') {
+            steps {
+                dir('settlement-service') {
+                    withCredentials([usernamePassword(
+                        credentialsId: "${DOCKER_HUB_ID}",
+                        passwordVariable: 'DOCKER_PASS',
+                        usernameVariable: 'DOCKER_USER'
+                    )]) {
+                        bat "docker login -u %DOCKER_HUB_USER% -p %DOCKER_PASS%"
+                        bat "docker build -t %DOCKER_HUB_USER%/settlement-service:latest -f deployments/Dockerfile ."
+                    }
+                }
+            }
+        }
 
-        // stage('Settlement - Functional Test') {
-        //     steps {
-        //         dir('settlement-service') {
-        //             bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
-        //             sleep time: 15, unit: 'SECONDS'
-        //             bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=settlement_test port=5434 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
-        //         }
-        //     }
-        //     post {
-        //         always {
-        //             dir('settlement-service') { bat 'docker-compose -f deployments/docker-compose.test.yml down -v' }
-        //         }
-        //     }
-        // }
+        stage('Settlement - Functional Test') {
+            steps {
+                dir('settlement-service') {
+                    bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
+                    sleep time: 15, unit: 'SECONDS'
+                    bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=settlement_test port=5434 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
+                }
+            }
+            post {
+                always {
+                    dir('settlement-service') { bat 'docker-compose -f deployments/docker-compose.test.yml down -v' }
+                }
+            }
+        }
 
         stage('Settlement - Push Image') {
             steps {
