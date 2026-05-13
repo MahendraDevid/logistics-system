@@ -17,14 +17,18 @@ func TestCalculatePricing(t *testing.T) {
 	svc := service.NewPricingService(repo)
 
 	req := domain.CalculationRequest{
-		Origin:      "Jakarta",
-		Destination: "Bandung",
-		Weight:      1,
-		Length:      10,
-		Width:       10,
-		Height:      10,
-		ServiceType: "REG",
-	}
+	OriginPostalCode:      "10110",
+	DestinationPostalCode: "40115",
+
+	WeightKG: 2,
+
+	LengthCM: 10,
+	WidthCM:  10,
+	HeightCM: 10,
+
+	ServiceType:  "REG",
+	UseInsurance: true,
+}
 
 	resp := svc.CalculateTariff(req)
 

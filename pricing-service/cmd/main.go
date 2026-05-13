@@ -1,21 +1,23 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-
 	"pricing-service/internal/handler"
+	"pricing-service/internal/mocks"
 	"pricing-service/internal/service"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	router := gin.Default()
 
-	r := gin.Default()
+	repo := mocks.NewMockPricingRepository()
 
-	pricingService := service.NewPricingService()
+	pricingService := service.NewPricingService(repo)
 
 	pricingHandler := handler.NewPricingHandler(pricingService)
 
-	r.POST("/calculate", pricingHandler.Calculate)
+	router.POST("/pricing/calculate", pricingHandler.CalculatePricing)
 
-	r.Run(":8080")
+	router.Run(":8081")
 }

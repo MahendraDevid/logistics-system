@@ -3,29 +3,23 @@ package handler
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
 	"pricing-service/internal/domain"
 	"pricing-service/internal/service"
+
+	"github.com/gin-gonic/gin"
 )
 
 type PricingHandler struct {
 	service *service.PricingService
 }
 
-func NewPricingHandler(
-	service *service.PricingService,
-) *PricingHandler {
-
+func NewPricingHandler(service *service.PricingService) *PricingHandler {
 	return &PricingHandler{
 		service: service,
 	}
 }
 
-func (h *PricingHandler) CalculatePricing(
-	c *gin.Context,
-) {
-
+func (h *PricingHandler) CalculatePricing(c *gin.Context) {
 	var req domain.CalculationRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -35,17 +29,10 @@ func (h *PricingHandler) CalculatePricing(
 		return
 	}
 
-	result, err := h.service.CalculateTariff(
-		c.Request.Context(),
-		req,
-	)
+	resp := h.service.CalculateTariff(req)
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, result)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "pricing calculated successfully",
+		"data":    resp,
+	})
 }
