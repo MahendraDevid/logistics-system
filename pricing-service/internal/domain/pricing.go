@@ -1,8 +1,29 @@
 package domain
 
+type CalculationRequest struct {
+	Origin      string
+	Destination string
+
+	Weight float64
+
+	Length float64
+	Width  float64
+	Height float64
+
+	ServiceType string
+}
+
+type CalculationResponse struct {
+	BaseTariff float64
+	Insurance  float64
+	Discount   float64
+	Total      float64
+	Estimated  string
+}
+
 type PricingRequest struct {
-	OriginPostalCode      string  `json:"origin_postal_code"`
-	DestinationPostalCode string  `json:"destination_postal_code"`
+	OriginPostalCode      string `json:"origin_postal_code"`
+	DestinationPostalCode string `json:"destination_postal_code"`
 
 	OriginLat float64 `json:"origin_lat"`
 	OriginLon float64 `json:"origin_lon"`
@@ -16,15 +37,20 @@ type PricingRequest struct {
 	WidthCM  float64 `json:"width_cm"`
 	HeightCM float64 `json:"height_cm"`
 
-	ServiceType  string `json:"service_type"`
+	ServiceType string `json:"service_type"`
+
 	UseInsurance bool   `json:"use_insurance"`
 	PromoCode    string `json:"promo_code"`
 }
 
 type PricingResponse struct {
-	BaseTariff   float64 `json:"base_tariff"`
+	BaseTariff float64 `json:"base_tariff"`
+
 	InsuranceFee float64 `json:"insurance_fee"`
-	Discount     float64 `json:"discount"`
+
+	Discount float64 `json:"discount"`
+
 	TotalPayment float64 `json:"total_payment"`
-	EstimatedSLA string  `json:"estimated_sla"`
+
+	EstimatedSLA string `json:"estimated_sla"`
 }

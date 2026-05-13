@@ -1,102 +1,46 @@
 package service
 
-import (
-	"errors"
-	"math"
-	"strings"
+import "pricing-service/internal/domain"
 
-	"pricing-service/internal/domain"
-)
+type PricingRepository interface {
+}
 
 type PricingService struct {
+	repo PricingRepository
 }
 
-func NewPricingService() *PricingService {
-	return &PricingService{}
-}
-
-func (s *PricingService) Calculate(req domain.PricingRequest) (*domain.PricingResponse, error) {
-
-	if req.WeightKG <= 0 {
-		return nil, errors.New("invalid weight")
+func NewPricingService(repo PricingRepository) *PricingService {
+	return &PricingService{
+		repo: repo,
 	}
+}
+
+func (s *PricingService) CalculateTariff(
+	req domain.CalculationRequest,
+) domain.CalculationResponse {
+
+	actualWeight := req.Weight
 
 	volumetric :=
-		(req.LengthCM * req.WidthCM * req.HeightCM) / 6000
+		(req.Length * req.Width * req.Height) / 6000
 
-	chargeable := math.Max(req.WeightKG, volumetric)
+	finalWeight := actualWeight
 
-	baseRate := getBaseRate(req.ServiceType)
-
-	baseTariff := chargeable * baseRate
-
-	insurance := 0.0
-
-	if req.UseInsurance {
-		insurance = baseTariff * 0.02
+	if volumetric > actualWeight {
+		finalWeight = volumetric
 	}
 
-	discount := getDiscount(req.PromoCode, baseTariff)
+	base := finalWeight * 10000
 
-	total := baseTariff + insurance - discount
+	insurance := base * 0.02
 
-	return &domain.PricingResponse{
-		BaseTariff:   round(baseTariff),
-		InsuranceFee: round(insurance),
-		Discount:     round(discount),
-		TotalPayment: round(total),
-		EstimatedSLA: getSLA(req.ServiceType),
-	}, nil
-}
+	total := base + insurance
 
-func getBaseRate(service string) float64 {
-
-	switch strings.ToUpper(service) {
-
-	case "REGULER":
-		return 9000
-
-	case "EXPRESS":
-		return 18000
-
-	case "SAME_DAY":
-		return 30000
-
-	default:
-		return 10000
+	return domain.CalculationResponse{
+		BaseTariff: base,
+		Insurance:  insurance,
+		Discount:   0,
+		Total:      total,
+		Estimated:  "2-3 Days",
 	}
-}
-
-func getDiscount(code string, amount float64) float64 {
-
-	switch strings.ToUpper(code) {
-
-	case "HEMAT10":
-		return amount * 0.1
-
-	default:
-		return 0
-	}
-}
-
-func getSLA(service string) string {
-
-	switch strings.ToUpper(service) {
-
-	case "REGULER":
-		return "3-5 Hari"
-
-	case "EXPRESS":
-		return "1-2 Hari"
-
-	case "SAME_DAY":
-		return "Hari Yang Sama"
-
-	default:
-		return "Unknown"
-	}
-}
-
-func round(v float64) float64 {
-	return math.Round(v*100) / 100
 }
