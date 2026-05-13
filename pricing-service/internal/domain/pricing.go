@@ -4,7 +4,7 @@ type CalculationRequest struct {
 	Origin      string
 	Destination string
 
-	Weight float64
+	WeightKG float64
 
 	Length float64
 	Width  float64
@@ -19,38 +19,4 @@ type CalculationResponse struct {
 	Discount   float64
 	Total      float64
 	Estimated  string
-}
-
-type PricingRequest struct {
-	OriginPostalCode      string `json:"origin_postal_code"`
-	DestinationPostalCode string `json:"destination_postal_code"`
-
-	OriginLat float64 `json:"origin_lat"`
-	OriginLon float64 `json:"origin_lon"`
-
-	DestinationLat float64 `json:"destination_lat"`
-	DestinationLon float64 `json:"destination_lon"`
-
-	WeightKG float64 `json:"weight_kg"`
-
-	LengthCM float64 `json:"length_cm"`
-	WidthCM  float64 `json:"width_cm"`
-	HeightCM float64 `json:"height_cm"`
-
-	ServiceType string `json:"service_type"`
-
-	UseInsurance bool   `json:"use_insurance"`
-	PromoCode    string `json:"promo_code"`
-}
-
-type PricingResponse struct {
-	BaseTariff float64 `json:"base_tariff"`
-
-	InsuranceFee float64 `json:"insurance_fee"`
-
-	Discount float64 `json:"discount"`
-
-	TotalPayment float64 `json:"total_payment"`
-
-	EstimatedSLA string `json:"estimated_sla"`
 }

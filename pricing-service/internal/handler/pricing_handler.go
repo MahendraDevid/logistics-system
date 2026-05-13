@@ -13,33 +13,37 @@ type PricingHandler struct {
 	service *service.PricingService
 }
 
-func NewPricingHandler(s *service.PricingService) *PricingHandler {
+func NewPricingHandler(
+	service *service.PricingService,
+) *PricingHandler {
+
 	return &PricingHandler{
-		service: s,
+		service: service,
 	}
 }
 
-func (h *PricingHandler) Calculate(c *gin.Context) {
+func (h *PricingHandler) CalculatePricing(
+	c *gin.Context,
+) {
 
-	var req domain.PricingRequest
+	var req domain.CalculationRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
-
 		return
 	}
 
-	result, err := h.service.Calculate(req)
+	result, err := h.service.CalculateTariff(
+		c.Request.Context(),
+		req,
+	)
 
 	if err != nil {
-
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
-
 		return
 	}
 

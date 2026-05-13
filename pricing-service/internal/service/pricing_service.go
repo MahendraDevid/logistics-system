@@ -1,8 +1,12 @@
 package service
 
-import "pricing-service/internal/domain"
+import (
+	"context"
+	"pricing-service/internal/domain"
+)
 
 type PricingRepository interface {
+	GetBaseRate(serviceType string) float64
 }
 
 type PricingService struct {
@@ -16,10 +20,11 @@ func NewPricingService(repo PricingRepository) *PricingService {
 }
 
 func (s *PricingService) CalculateTariff(
+	ctx context.Context,
 	req domain.CalculationRequest,
-) domain.CalculationResponse {
+) (domain.CalculationResponse, error) {
 
-	actualWeight := req.Weight
+	actualWeight := req.WeightKG
 
 	volumetric :=
 		(req.Length * req.Width * req.Height) / 6000
@@ -30,7 +35,13 @@ func (s *PricingService) CalculateTariff(
 		finalWeight = volumetric
 	}
 
-	base := finalWeight * 10000
+	rate := s.repo.GetBaseRate(req.ServiceType)
+
+	if rate == 0 {
+		rate = 10000
+	}
+
+	base := finalWeight * rate
 
 	insurance := base * 0.02
 
@@ -42,5 +53,5 @@ func (s *PricingService) CalculateTariff(
 		Discount:   0,
 		Total:      total,
 		Estimated:  "2-3 Days",
-	}
+	}, nil
 }
