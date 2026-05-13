@@ -1,43 +1,33 @@
 package functional
 
 import (
-	"context"
 	"testing"
 
 	"pricing-service/internal/domain"
+	"pricing-service/internal/mocks"
 	"pricing-service/internal/service"
-	"pricing-service/mocks"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCalculatePricing(t *testing.T) {
 
-	repo := mocks.NewMockPricingRepository(nil)
+	repo := mocks.NewMockPricingRepository()
 
 	svc := service.NewPricingService(repo)
 
 	req := domain.CalculationRequest{
 		Origin:      "Jakarta",
 		Destination: "Bandung",
-
-		WeightKG: 5,
-
-		Length: 20,
-		Width:  20,
-		Height: 20,
-
-		ServiceType: "REGULAR",
+		Weight:      1,
+		Length:      10,
+		Width:       10,
+		Height:      10,
+		ServiceType: "REG",
 	}
 
-	result, err := svc.CalculateTariff(
-		context.Background(),
-		req,
-	)
+	resp := svc.CalculateTariff(req)
 
-	assert.NoError(t, err)
-
-	assert.NotNil(t, result)
-
-	assert.Greater(t, result.Total, 0.0)
+	assert.NotNil(t, resp)
+	assert.Equal(t, "2-3 Days", resp.Estimated)
 }
