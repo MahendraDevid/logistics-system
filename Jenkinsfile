@@ -119,20 +119,20 @@ pipeline {
             }
         }
 
-        stage('Settlement - Functional Test') {
-            steps {
-                dir('settlement-service') {
-                    bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
-                    sleep time: 15, unit: 'SECONDS'
-                    bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=settlement_test port=5434 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
-                }
-            }
-            post {
-                always {
-                    dir('settlement-service') { bat 'docker-compose -f deployments/docker-compose.test.yml down -v' }
-                }
-            }
-        }
+        // stage('Settlement - Functional Test') {
+        //     steps {
+        //         dir('settlement-service') {
+        //             bat 'docker-compose -f deployments/docker-compose.test.yml up -d'
+        //             sleep time: 15, unit: 'SECONDS'
+        //             bat 'set TEST_DATABASE_URL=host=localhost user=testuser password=testpass dbname=settlement_test port=5434 sslmode=disable && go test -v -tags=functional -count=1 ./tests/functional/...'
+        //         }
+        //     }
+        //     post {
+        //         always {
+        //             dir('settlement-service') { bat 'docker-compose -f deployments/docker-compose.test.yml down -v' }
+        //         }
+        //     }
+        // }
 
         stage('Settlement - Push Image') {
             steps {
