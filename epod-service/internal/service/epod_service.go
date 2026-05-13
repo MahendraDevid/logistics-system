@@ -1,81 +1,46 @@
 package service
 
-import (
-	"errors"
-	"fmt"
-	"mime/multipart"
-	"os"
+import "epod-service/internal/domain"
 
-	"github.com/google/uuid"
+type Storage interface {
+	Upload(fileName string) (string, error)
+}
 
-	"epod-service/internal/domain"
-	"epod-service/internal/kafka"
-	"epod-service/internal/storage"
-)
+type KafkaProducer interface {
+	Publish(topic string, message string) error
+}
 
 type EPODService struct {
-	storage *storage.LocalStorage
-	kafka   *kafka.Producer
+	storage Storage
+	kafka   KafkaProducer
 }
 
 func NewEPODService(
-	storage *storage.LocalStorage,
-	kafka *kafka.Producer,
+	storage Storage,
+	kafka KafkaProducer,
 ) *EPODService {
-
 	return &EPODService{
 		storage: storage,
 		kafka:   kafka,
 	}
 }
 
-func (s *EPODService) Upload(
-	file multipart.File,
-	header *multipart.FileHeader,
-	awb string,
-	courierID string,
-	lat float64,
-	lon float64,
-) (*domain.UploadResponse, error) {
+func (s *EPODService) ProcessUpload(
+	req domain.UploadRequest,
+) (domain.UploadResponse, error) {
 
-	if awb == "" {
-		return nil, errors.New("awb required")
-	}
-
-	if courierID == "" {
-		return nil, errors.New("courier id required")
-	}
-
-	err := os.MkdirAll("uploads", os.ModePerm)
-
+	url, err := s.storage.Upload(req.FileName)
 	if err != nil {
-		return nil, err
+		return domain.UploadResponse{}, err
 	}
 
-	filename := fmt.Sprintf(
-		"%s-%s",
-		uuid.New().String(),
-		header.Filename,
+	_ = s.kafka.Publish(
+		"package.delivered",
+		req.AWB,
 	)
 
-	path := "uploads/" + filename
-
-	err = s.storage.SaveFile(file, path)
-
-	if err != nil {
-		return nil, err
-	}
-
-	imageURL := "http://localhost:8080/uploads/" + filename
-
-	s.kafka.PublishDeliveredEvent(awb)
-
-	return &domain.UploadResponse{
-		Status:    "SUCCESS",
-		AWB:       awb,
-		CourierID: courierID,
-		ImageURL:  imageURL,
-		Latitude:  lat,
-		Longitude: lon,
+	return domain.UploadResponse{
+		Status:   "SUCCESS",
+		ImageURL: url,
 	}, nil
 }

@@ -7,6 +7,10 @@ func NewMockKafka() *MockKafka {
 	return &MockKafka{}
 }
 
-func (m *MockKafka) PublishDeliveredEvent(awb string) {
-	// mock do nothing
+func (m *MockKafka) Publish(
+	topic string,
+	message string,
+) error {
+
+	return nil
 }

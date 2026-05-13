@@ -20,8 +20,9 @@ func (s *PricingService) CalculateTariff(
 	req domain.CalculationRequest,
 ) domain.CalculationResponse {
 
-	actualWeight := req.Weight
-	volumetric := (req.Length * req.Width * req.Height) / 6000
+	actualWeight := req.WeightKG
+
+	volumetric := (req.LengthCM * req.WidthCM * req.HeightCM) / 6000
 
 	finalWeight := actualWeight
 
@@ -30,13 +31,17 @@ func (s *PricingService) CalculateTariff(
 	}
 
 	baseRate := s.repo.GetBaseRate(
-		req.Origin,
-		req.Destination,
+		req.OriginPostalCode,
+		req.DestinationPostalCode,
 		req.ServiceType,
 	)
 
 	base := finalWeight * baseRate
-	insurance := base * 0.02
+	insurance := 0.0
+
+	if req.UseInsurance {
+		insurance = base * 0.02
+	}
 
 	total := base + insurance
 

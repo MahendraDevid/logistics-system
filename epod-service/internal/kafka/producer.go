@@ -1,7 +1,5 @@
 package kafka
 
-import "log"
-
 type Producer struct {
 }
 
@@ -9,10 +7,10 @@ func NewProducer() *Producer {
 	return &Producer{}
 }
 
-func (p *Producer) PublishDeliveredEvent(awb string) {
+func (p *Producer) Publish(
+	topic string,
+	message string,
+) error {
 
-	log.Printf(
-		"event PackageDelivered published for AWB %s",
-		awb,
-	)
+	return nil
 }
